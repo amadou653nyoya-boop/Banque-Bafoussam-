@@ -1,6 +1,5 @@
-from flask import Flask
+from flask import Flask, request
 import sqlite3
-
 app = Flask(__name__)
 DB = "banque.db"
 
@@ -12,38 +11,19 @@ def init_db():
     c.execute("INSERT OR IGNORE INTO comptes VALUES ('CAISSE-BAFOUSSAM', 1990000)")
     conn.commit()
     conn.close()
-
 init_db()
 
-@app.route('/')
-def maison():
+def get_html(msg=""):
     conn = sqlite3.connect(DB)
     c = conn.cursor()
     c.execute("SELECT * FROM comptes")
     comptes = c.fetchall()
     conn.close()
-
-    cards = ""
-    for num, solde in comptes:
-        s = f"{solde:,}".replace(",", " ")
-        cards += f'<div class="card"><div class="numero">{num}</div><div class="solde">{s} FCFA</div></div>'
-
-    return f"""
-<html><head><meta name="viewport" content="width=device-width, initial-scale=1">
-<style>
-body{{font-family:Arial;background:#fff7ed;margin:0}}
-.header{{background:linear-gradient(90deg,#ff6a00,#ee0979);color:white;padding:25px;text-align:center}}
-.container{{padding:15px}}
-.card{{background:white;border-radius:15px;padding:20px;margin-bottom:12px;box-shadow:0 4px 10px rgba(0,0,0,0.1);border-left:5px solid #ff6a00}}
-.solde{{font-size:26px;font-weight:bold;color:#16a34a}}
-.numero{{color:#666;font-size:13px}}
-.btn{{display:block;background:#ff6a00;color:white;text-align:center;padding:15px;border-radius:10px;text-decoration:none;margin-top:10px;font-weight:bold}}
-</style></head>
-<body>
-<div class="header"><h1>🏦 CAISSE BAFOUSSAM</h1><p>Banque Bafoussam OK - En Ligne</p></div>
-<div class="container">{cards}<a class="btn" href="/">🔄 Actualiser</a></div>
-</body></html>
-"""
-
-if __name__ == '__main__':
-    app.run()
+    cards=""
+    options=""
+    for num,solde in comptes:
+        s=f"{solde:,}".replace(","," ")
+        cards+=f'<div style="background:white;border-radius:15px;padding:20px;margin-bottom:12px;box-shadow:0 4px 10px rgba(0,0,0,0.1);border-left:5px solid #ff6a00"><div style="color:#666;font-size:13px">{num}</div><div style="font-size:22px;font-weight:bold;color:#16a34a">{s} FCFA</div></div>'
+        options+=f'<option value="{num}">{num}</option>'
+    alert=f'<div style="background:#dcfce7;color:#166534;padding:15px;border-radius:10px;text-align:center;margin-bottom:15px;font-weight:bold">{msg}</div>' if msg else ''
+    return f"<html><head><meta name='viewport' content='width=device-width, initial-scale=1'><style>body{{font-family:Arial;background:#fff7ed;margin:0}}.header{{background:linear-gradient(90deg,#ff6a00,#ee0979);color:white;padding:25px;text-align:center}}.container{{padding:15px;max-width:500px;margin:auto}}.box{{background:white;border-radius:15px;padding:20px;margin-top:20px;box-shadow:0 4px 10px rgba(0,0,0,0.1)}} input,select{{width:100%;padding:12px;margin:8px 0;border:1px solid #ddd;border-radius:10px}}
