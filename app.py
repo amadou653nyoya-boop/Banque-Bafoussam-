@@ -1,29 +1,44 @@
- flask import Flask, request
+from flask import Flask, request
 import sqlite3
 app = Flask(__name__)
 DB = "banque.db"
-
-def init_db():
-    conn = sqlite3.connect(DB)
-    c = conn.cursor()
-    c.execute("CREATE TABLE IF NOT EXISTS comptes (id TEXT PRIMARY KEY, solde INTEGER)")
-    c.execute("INSERT OR IGNORE INTO comptes VALUES ('402000-00001', 960000)")
-    c.execute("INSERT OR IGNORE INTO comptes VALUES ('CAISSE-BAFOUSSAM', 1990000)")
-    conn.commit()
-    conn.close()
-init_db()
-
-def get_html(msg=""):
-    conn = sqlite3.connect(DB)
-    c = conn.cursor()
-    c.execute("SELECT * FROM comptes")
-    comptes = c.fetchall()
-    conn.close()
-    cards=""
-    options=""
-    for num,solde in comptes:
-        s=f"{solde:,}".replace(","," ")
-        cards+=f'<div style="background:white;border-radius:15px;padding:20px;margin-bottom:12px;box-shadow:0 4px 10px rgba(0,0,0,0.1);border-left:5px solid #ff6a00"><div style="color:#666;font-size:13px">{num}</div><div style="font-size:22px;font-weight:bold;color:#16a34a">{s} FCFA</div></div>'
-        options+=f'<option value="{num}">{num}</option>'
-    alert=f'<div style="background:#dcfce7;color:#166534;padding:15px;border-radius:10px;text-align:center;margin-bottom:15px;font-weight:bold">{msg}</div>' if msg else ''
-    return f"<html><head><meta name='viewport
+def init():
+ con = sqlite3.connect(DB)
+ con.execute("CREATE TABLE IF NOT EXISTS comptes (id TEXT PRIMARY KEY, solde INTEGER)")
+ con.execute("INSERT OR IGNORE INTO comptes VALUES ('402000-00001', 960000)")
+ con.execute("INSERT OR IGNORE INTO comptes VALUES ('CAISSE-BAFOUSSAM', 1990000)")
+ con.commit()
+ con.close()
+init()
+@app.route('/')
+def home():
+ con = sqlite3.connect(DB)
+ data = con.execute("SELECT * FROM comptes").fetchall()
+ con.close()
+ page = "<html><meta name='viewport' content='width=device-width'><body style='font-family:Arial;background:#fff7ed'><h1 style='background:orange;color:white;padding:20px;text-align:center'>CAISSE BAFOUSSAM</h1><div style='max-width:500px;margin:auto;padding:15px'>"
+ for num, solde in data:
+  page += f"<div style='background:white;padding:15px;margin:10px;border-left:4px solid orange'><b>{num}</b><br><b style='color:green'>{solde} FCFA</b></div>"
+ page += "<form action='/transfert' method='POST' style='background:white;padding:15px;border-radius:10px'><h3>Transfert</h3>"
+ page += "De: <select name='de'><option>402000-00001</option><option>CAISSE-BAFOUSSAM</option></select><br>"
+ page += "Vers: <select name='vers'><option>402000-00001</option><option>CAISSE-BAFOUSSAM</option></select><br>" page += "Montant: <input type='number' name='montant' required><br><button style='background:orange;color:white;width:100%;padding:12px;margin-top:10px'>TRANSFERER</button></form></div></body></html>"
+ return page
+@app.route('/transfert', methods=['POST'])
+def transfert():
+ de = request.form['de']
+ vers = request.form['vers']
+ montant = int(request.form['montant'])
+ con = sqlite3.connect(DB)
+ solde = con.execute("SELECT solde FROM comptes WHERE id=?", (de,)).fetchone()[0]
+ if de == vers:
+  con.close()
+  return "Meme compte <a href='/'>Retour</a>"
+ if solde < montant:
+  con.close()
+  return f"Solde insuffisant {solde} <a href='/'>Retour</a>"
+ con.execute("UPDATE comptes SET solde=solde-? WHERE id=?", (montant, de))
+ con.execute("UPDATE comptes SET solde=solde+? WHERE id=?", (montant, vers))
+ con.commit()
+ con.close()
+ return f"OK {montant} envoye {de} vers {vers} <br><a href='/'>Retour</a>"
+if __name__ == '__main__':
+ app.run()
