@@ -44,4 +44,4 @@ def transfert():
  con.close()
  return f"OK {montant} de {de} vers {vers} <br><a href='/'>Retour</a>"
 if __name__ == '__main__':
-     app.run()!
+     app.run()
