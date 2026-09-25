@@ -1,4 +1,4 @@
-from flask import Flask, request
+request
 import sqlite3
 app = Flask(__name__)
 DB = "banque.db"
@@ -42,6 +42,4 @@ def transfert():
  con.execute("UPDATE comptes SET solde=solde+? WHERE id=?", (montant, vers))
  con.commit()
  con.close()
- return f"OK {montant} de {de} vers {vers} <br><a href='/'>Retour</a>"
-if __name__ == '__main__':
-     app.run()
+ return f"OK {montant} de {de} vers {vers} <br><a href='/'>Retour</a
