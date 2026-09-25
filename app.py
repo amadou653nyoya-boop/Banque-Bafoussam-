@@ -15,13 +15,16 @@ def home():
  con = sqlite3.connect(DB)
  data = con.execute("SELECT * FROM comptes").fetchall()
  con.close()
- page = "<html><meta name='viewport' content='width=device-width'><body style='font-family:Arial;background:#fff7ed'><h1 style='background:orange;color:white;padding:20px;text-align:center'>CAISSE BAFOUSSAM</h1><div style='max-width:500px;margin:auto;padding:15px'>"
- for num, solde in data:
-  page += f"<div style='background:white;padding:15px;margin:10px;border-left:4px solid orange'><b>{num}</b><br><b style='color:green'>{solde} FCFA</b></div>"
- page += "<form action='/transfert' method='POST' style='background:white;padding:15px;border-radius:10px'><h3>Transfert</h3>"
- page += "De: <select name='de'><option>402000-00001</option><option>CAISSE-BAFOUSSAM</option></select><br>"
- page += "Vers: <select name='vers'><option>402000-00001</option><option>CAISSE-BAFOUSSAM</option></select><br>" page += "Montant: <input type='number' name='montant' required><br><button style='background:orange;color:white;width:100%;padding:12px;margin-top:10px'>TRANSFERER</button></form></div></body></html>"
- return page
+ h = "<html><body style='font-family:Arial'>"
+ h += "<h1 style='background:orange;color:white;padding:20px'>CAISSE BAFOUSSAM</h1>"
+ for n,s in data:
+  h += f"<p><b>{n}</b> : {s} FCFA</p>"
+ h += "<form action='/transfert' method='POST'>"
+ h += "De: <select name='de'><option>402000-00001</option><option>CAISSE-BAFOUSSAM</option></select><br>"
+ h += "Vers: <select name='vers'><option>402000-00001</option><option>CAISSE-BAFOUSSAM</option></select><br>"
+ h += "Montant: <input type='number' name='montant' required><br>"
+ h += "<button style='background:orange;padding:10px'>TRANSFERER</button></form></body></html>"
+ return h  
 @app.route('/transfert', methods=['POST'])
 def transfert():
  de = request.form['de']
@@ -39,7 +42,6 @@ def transfert():
  con.execute("UPDATE comptes SET solde=solde+? WHERE id=?", (montant, vers))
  con.commit()
  con.close()
- return f"OK {montant} envoye {de} vers {vers} <br><a href='/'>Retour</a>"
+ return f"OK {montant} de {de} vers {vers} <br><a href='/'>Retour</a>"
 if __name__ == '__main__':
- app.run()
-  
+     app.run()!
