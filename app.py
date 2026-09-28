@@ -1,30 +1,63 @@
-from flask import Flask, request, redirect
-import requests, uuid, os
+from flask import Flask
+import requests
+
 app = Flask(__name__)
-KEY=os.environ.get("NOTCHPAY_KEY")
-@app.route("/")
+
+# --- TA PAGE D'ACCUEIL ---
+@app.route('/')
 def home():
- return "<h1>CAISSE BAFOUSSAM LIVE</h1><form method='POST' action='/payer'><input name='email' placeholder='email'><br><br><input name='montant' value='100'><br><br><button>PAYER MOMO</button></form>"
-@app.route("/payer",methods=["POST"])
-def payer():
- data={"email":request.form["email"],"amount":request.form["montant"],"currency":"XAF","reference":str(uuid.uuid4()),"callback":"https://banque-bafoussam.onrender.com/callback"}
- r=requests.post("https://api.notchpay.co/payments/initialize",json=data,headers={"Authorization":KEY})
- try: return redirect(r.json()["transaction"]["authorization_url"])
- except: return r.text
-@app.route("/callback")
-def callback():
- return "Paiement OK"
+    return "Banque Bafoussam est en ligne ! Va sur /setup-mtn pour finir MTN"
+
+# --- ETAPE 2: RECUPERER LA CLE SECRETE API_KEY ---
 @app.route('/setup-mtn')
 def setup_mtn():
-    import requests, uuid
     sub_key = "ba9611de565f4dc4b710a5359e05f797"
-    api_user_id = str(uuid.uuid4())
-    url = "https://sandbox.momodeveloper.mtn.com/v1_0/apiuser"
+    api_user_id = "190c8d40-5779-441d-9564-1fa699c75b59"  # celui que tu as déjà réussi avec Status 201
+
+    # On demande la API_KEY à MTN
+    url = f"https://sandbox.momodeveloper.mtn.com/v1_0/apiuser/{api_user_id}/apikey"
+    headers = {
+        "Ocp-Apim-Subscription-Key": sub_key
+    }
+    r = requests.post(url, headers=headers)
+    
+    try:
+        data = r.json()
+        api_key = data.get('apiKey', 'Non trouvé')
+    except:
+        api_key = r.text
+
+    return f"""
+    <h1>ETAPE 2 REUSSIE</h1>
+    <p><b>Status:</b> {r.status_code}</p>
+    <p><b>API_USER_ID:</b> {api_user_id}</p>
+    <p><b>API_KEY:</b> {api_key}</p>
+    <hr>
+    <p>Copie ces 2 valeurs dans Render > Environment:</p>
+    <p>MTN_API_USER_ID = {api_user_id}</p>
+    <p>MTN_API_KEY = {api_key}</p>
+    <p>MTN_SUBSCRIPTION_KEY = {sub_key}</p>
+    """
+
+# --- ETAPE 3: TESTER QUE CA MARCHE (obtenir le Token) ---
+@app.route('/test-token')
+def test_token():
+    import base64
+    sub_key = "ba9611de565f4dc4b710a5359e05f797"
+    api_user_id = "190c8d40-5779-441d-9564-1fa699c75b59"
+    # Tu mettras ta nouvelle API_KEY ici après l'avoir copiée
+    api_key = "COLLE_ICI_TA_API_KEY_QUE_TU_VIENS_D_OBTENIR"
+
+    url = "https://sandbox.momodeveloper.mtn.com/collection/token/"
+    auth_str = f"{api_user_id}:{api_key}"
+    auth_b64 = base64.b64encode(auth_str.encode()).decode()
+    
     headers = {
         "Ocp-Apim-Subscription-Key": sub_key,
-        "X-Reference-Id": api_user_id,
-        "Content-Type": "application/json"
+        "Authorization": f"Basic {auth_b64}"
     }
-    data = {"providerCallbackHost": "banque-bafoussam.onrender.com"}
-    r = requests.post(url, headers=headers, json=data)
-    return f"Status: {r.status_code}<br>API_USER_ID: {api_user_id}<br>Response: {r.text}"
+    r = requests.post(url, headers=headers)
+    return f"Status Token: {r.status_code}<br>Response: {r.text}"
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=10000)
