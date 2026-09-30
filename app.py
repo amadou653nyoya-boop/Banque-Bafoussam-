@@ -1,24 +1,16 @@
-from flask import Flask, request, jsonify
-import os, requests, base64, uuid
-app = Flask(__name__)
-MTN_USER_ID = os.getenv("MTN_API_USER_ID")
-MTN_API_KEY = os.getenv("MTN_API_KEY")
-MTN_SUB_KEY = os.getenv("MTN_SUBSCRIPTION_KEY")
-def get_mtn_token():
-    url = "https://sandbox.momodeveloper.mtn.com/collection/token/"
-    auth = base64.b64encode(f"{MTN_USER_ID}:{MTN_API_KEY}".encode()).decode()
-    headers = {"Ocp-Apim-Subscription-Key": MTN_SUB_KEY, "Authorization": f"Basic {auth}"}
-    r = requests.post(url, headers=headers)
-    return r.json().get("access_token")
-@app.route('/')
+from fastapi import FastAPI
+from fastapi.responses import HTMLResponse
+app = FastAPI()
+comptes = {
+    "531000-00001": {"nom": "CAISSE PHYSIQUE", "solde": 51980000},
+    "402000-00001": {"nom": "CLIENT MARCHE B 1", "solde": 950000},
+    "402000-00002": {"nom": "CLIENT MARCHE B 2", "solde": 30000},
+    "101000-00001": {"nom": "CAPITAL - MONNAIE SCRIPTURALE", "solde": 50000000},
+}
+@app.get("/", response_class=HTMLResponse)
 def home():
-    return f"<h1>Banque Bafoussam CONNECTEE</h1><p>ID: {MTN_USER_ID}</p><a href='/test-mtn'>Tester MTN</a>"
-@app.route('/test-mtn')
-def test_mtn():
-    try:
-        token = get_mtn_token()
-        return f"CONNEXION REUSSIE ! Token OK: {token[:30]}... Tu peux recevoir de l'argent MTN."
-    except Exception as e:
-        return f"Erreur: {e}"
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=10000)
+    html = "<h1>Banque Bafoussam - 50.000.000F</h1><table border=1><tr><th>Numero</th><th>Nom</th><th>Solde</th></tr>"
+    for num, info in comptes.items():
+        html += f"<tr><td>{num}</td><td>{info['nom']}</td><td>{info['solde']:,} F</td></tr>"
+    html += "</table><br><a href='/test-mtn'>Testeur MTN - CONNEXION REUSSIE</a>"
+    return html
