@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+fastapi import FastAPI
 import os
 import base64
 import requests
@@ -32,4 +32,4 @@ def get_token():
     try:
         return {"status": r.status_code, "result": r.json()}
     except:
-        return {"status": r.status_code, "result": r.text}
+        return {"status": r.status_code
